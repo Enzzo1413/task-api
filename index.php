@@ -83,10 +83,27 @@ if ($path === '/tasks') {
     respond(404, ['status' => 404, 'message' => 'Not found.']);
 }
 
-// ---- Auth (each group uses its own key; data is separated by key) ----------
-$apiKey = trim($_SERVER['HTTP_X_API_KEY'] ?? '');
+// ---- Auth (each key gets its own private task list) -------------------------
+// If API_KEYS is set (comma-separated list, as an environment variable or in
+// config.local.php as 'api_keys'), ONLY those keys are accepted.
+// If it is not set, any key of 6-100 characters is accepted.
+$apiKey  = trim($_SERVER['HTTP_X_API_KEY'] ?? '');
+$allowed = getenv('API_KEYS') ?: ($config['api_keys'] ?? '');
+$allowed = array_filter(array_map('trim', explode(',', (string) $allowed)));
+
 if (strlen($apiKey) < 6 || strlen($apiKey) > 100) {
-    respond(401, ['status' => 401, 'message' => 'Missing or invalid X-API-Key header (6-100 characters). Pick any secret string for your group.']);
+    respond(401, ['status' => 401, 'message' => 'Missing or invalid X-API-Key header.']);
+}
+if ($allowed) {
+    $ok = false;
+    foreach ($allowed as $k) {
+        if (hash_equals($k, $apiKey)) {
+            $ok = true;
+        }
+    }
+    if (!$ok) {
+        respond(401, ['status' => 401, 'message' => 'Invalid API key. Ask the API owner for your key.']);
+    }
 }
 
 // ---- Database -------------------------------------------------------------
