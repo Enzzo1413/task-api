@@ -1,0 +1,12 @@
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
+
+# Make sure the X-API-Key header reaches PHP on CGI/FastCGI hosts
+SetEnvIf X-API-Key "(.+)" HTTP_X_API_KEY=$1
+
+# Don't expose config/schema
+<FilesMatch "^(config\.php|schema_.*\.sql|config\.local\.php|config\.local\.sample\.php|README\.md|Dockerfile)$">
+  Require all denied
+</FilesMatch>
